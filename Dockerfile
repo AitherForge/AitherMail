@@ -7,4 +7,4 @@ FROM mailhog/mailhog:latest
 COPY --from=build /aithermail /aithermail
 COPY . /app
 EXPOSE 8080 1025 8025
-CMD ["/bin/sh","/app/start.sh"]
+CMD ["/bin/sh","-c","MailHog -api-bind-addr 0.0.0.0:8025 -ui-bind-addr 0.0.0.0:8025 -smtp-bind-addr 0.0.0.0:1025 & exec /aithermail"]
