@@ -8,4 +8,4 @@ COPY --from=build /aithermail /aithermail
 COPY . /app
 RUN chmod +x /app/start.sh
 EXPOSE 8080 1025 8025
-CMD ["/app/start.sh"]
+CMD ["/bin/sh","/app/start.sh"]
