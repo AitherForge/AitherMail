@@ -1,54 +1,33 @@
 # AitherMail
 
-A Gmail-style webmail client designed for GitHub Pages. AitherMail uses the shared AitherBackend for Aither Account authentication and Google Identity Services plus the Gmail REST API for Gmail access.
+A Gmail-style webmail client for GitHub Pages with an Aither Account layer backed by AitherBackend.
 
 ## Architecture
 
-- **Frontend:** GitHub Pages (`index.html`, `style.css`, `app.js`)
-- **Aither Account backend:** [`OGAitherTech/AitherBackend`](https://github.com/OGAitherTech/AitherBackend), deployed separately as a FastAPI service
-- **Gmail:** Google OAuth + Gmail REST API
-- **No Gmail API key:** the frontend uses a public Google OAuth Web client ID; the Gmail access token is kept in memory only
-- **Backend sessions:** AitherBackend uses an HttpOnly `aither_session` cookie and server-side sessions
+- **Frontend:** static HTML/CSS/JavaScript on GitHub Pages
+- **Aither Account:** AitherBackend session authentication
+- **Email:** Gmail REST API with Google Identity Services OAuth
+- **No Gmail API key:** Google uses a public OAuth Web client ID
+- **No secrets in this repository:** private backend credentials remain server-side
 
 ## Setup
 
-### 1. Deploy AitherBackend
+### AitherBackend
 
-Deploy [`AitherBackend`](https://github.com/OGAitherTech/AitherBackend) to Render (or another HTTPS FastAPI host). The backend repository already contains a `render.yaml` Blueprint and the required authentication API.
+Deploy the existing AitherBackend as an HTTPS FastAPI service. AitherMail is configured for `https://aither-backend.onrender.com` by default; change `BACKEND_URL` at the top of `app.js` if your deployed URL is different.
 
-Set the backend's production environment variables as documented in its README. For production, use HTTPS, persistent storage for its SQLite database, `SECURE_COOKIES=true`, and `SameSite=None` for cross-site GitHub Pages sessions.
+AitherMail uses the backend's `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/session`, and `POST /api/auth/logout` endpoints with credentialed requests.
 
-### 2. Connect AitherMail to the backend
+### Gmail
 
-At the top of `app.js`, set:
+1. Enable the Gmail API in Google Cloud.
+2. Configure OAuth consent as External → Testing and add your Gmail address as a test user.
+3. Create an OAuth client ID for a Web application.
+4. Add your GitHub Pages origin as an Authorized JavaScript origin.
+5. For local development also add `http://localhost:8000`.
+6. Replace `YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com` in `CLIENT_ID` in `app.js`.
 
-```js
-const BACKEND_URL='https://aither-backend.onrender.com';
-```
-
-If your deployed backend has a different URL, use that URL instead.
-
-AitherMail uses these backend endpoints:
-
-- `POST /api/auth/register` — create an Aither Account
-- `POST /api/auth/login` — sign in
-- `GET /api/auth/session` — restore the account session
-- `POST /api/auth/logout` — sign out
-
-Requests use `credentials: 'include'` so the backend's HttpOnly session cookie works from GitHub Pages.
-
-### 3. Configure Gmail OAuth
-
-1. Create a Google Cloud project.
-2. Enable the Gmail API.
-3. Configure OAuth consent as External and Testing.
-4. Add your own Gmail address as a test user.
-5. Create an OAuth client ID for a Web application.
-6. Add your GitHub Pages origin as an Authorized JavaScript origin.
-7. For local development also add `http://localhost:8000`.
-8. Put the public OAuth client ID in `CLIENT_ID` in `app.js`.
-
-Google may show an unverified-app warning because Gmail modify is a restricted scope. In Testing mode, use Advanced and Continue if you trust your own app.
+No Gmail API key is used. The Google OAuth client ID is public configuration; the Gmail access token is kept in memory.
 
 ## Run locally
 
@@ -58,36 +37,31 @@ python -m http.server 8000
 
 Open `http://localhost:8000/`. Do not use a `file://` URL.
 
-For local AitherBackend development, follow the backend repository's FastAPI setup instructions and change `BACKEND_URL` to `http://127.0.0.1:8000` (or the backend port you use).
-
 ## GitHub Pages
 
 Use GitHub Settings → Pages → Deploy from a branch → `main` → root.
 
-The repository path does not change the OAuth origin. Register the GitHub Pages domain itself.
-
 ## Features
 
-- Aither Account registration and sign-in
-- Persistent backend sessions through an HttpOnly cookie
-- Google Identity Services OAuth token flow
-- Gmail modify and send scopes only
+- Aither Account registration and login
+- Shared AitherBackend session
+- Google Gmail connection
 - Inbox, Starred, Sent, Drafts, Trash
 - Gmail search syntax
-- 25-message pagination with parallel metadata hydration
-- UTF-8-safe Gmail base64url decoding
-- Sandboxed iframe rendering for HTML email
+- 25-message pagination
+- UTF-8-safe Gmail decoding
+- Sandboxed HTML email rendering
 - Archive, trash, star/unstar, mark unread
 - Compose and reply
 - Responsive desktop/mobile layout
-- In-memory Gmail access token only
+- Aither Account and Gmail logout
 
 ## Security
 
-Aither Account passwords are handled by AitherBackend using salted `scrypt` password hashing and server-side opaque sessions. The browser does not store the Aither session in localStorage. The backend session is an HttpOnly cookie. Gmail access tokens are held in memory and are not stored in localStorage or sessionStorage. A Gmail 401 causes one fresh-token retry. Email HTML is rendered in an empty sandbox iframe rather than injected into the main DOM.
+Passwords are handled by AitherBackend using salted `scrypt` hashing and server-side sessions. AitherMail does not store passwords or backend secrets. The backend session uses an HttpOnly cookie. Gmail access tokens stay in memory and are not stored in localStorage/sessionStorage. Email HTML is rendered inside an empty sandbox iframe.
 
 Never put SMTP passwords, provider/API secrets, or other private backend credentials into this GitHub Pages repository.
 
 ## v1 exclusions
 
-Attachments, draft editing, label management, offline cache, multi-account support, and conversation view are intentionally outside v1. A future internal Aither messaging layer can use AitherBackend's authenticated data APIs without coupling the Gmail UI to Gmail-specific storage.
+Attachments, draft editing, label management, offline cache, multi-account Gmail support, and conversation view remain outside v1.
