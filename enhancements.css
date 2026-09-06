@@ -1,0 +1,8 @@
+/* AitherMail v5 visual layer */
+.help-chip{transition:transform .15s,background .15s}.help-chip:active{transform:scale(.97)}
+.settingsbox{animation:am-in .18s ease-out}.composebox{animation:am-in .18s ease-out}@keyframes am-in{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+html[data-theme="dark"] .settingsbody select{border-color:#34464d}
+html[data-theme="dark"] .settingsabout{border-color:#34464d}
+html[data-theme="dark"] .email-frame{border-color:#34464d}
+html[data-theme="dark"] .login-card{border-color:#34464d}
+@media(max-width:600px){.settingsbox{max-height:calc(100dvh - 24px);display:flex;flex-direction:column}.settingsbody{overflow:auto}.composebox{max-height:calc(100dvh - 24px);display:flex;flex-direction:column}.composebox textarea{flex:1}}
