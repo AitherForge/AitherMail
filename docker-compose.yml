@@ -1,0 +1,18 @@
+services:
+  aither-mail-server:
+    image: mailhog/mailhog:latest
+    container_name: aither-mail-server
+    restart: unless-stopped
+    environment:
+      MH_STORAGE: maildir
+      MH_MAILDIR_PATH: /maildir
+      MH_CORS_ORIGIN: http://localhost:8000
+      MH_HOSTNAME: aither-mail.local
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    volumes:
+      - aither-maildir:/maildir
+
+volumes:
+  aither-maildir:
