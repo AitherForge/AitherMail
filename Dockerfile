@@ -6,5 +6,6 @@ RUN go mod init aithermail && go mod tidy && CGO_ENABLED=0 GOOS=linux GOARCH=amd
 FROM mailhog/mailhog:latest
 COPY --from=build /aithermail /aithermail
 COPY . /app
-EXPOSE 8025 1025
+RUN chmod +x /app/start.sh
+EXPOSE 8080 1025 8025
 CMD ["/app/start.sh"]
