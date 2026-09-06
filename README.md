@@ -1,74 +1,73 @@
-# Aither Mail
+# Aither Mail v4
 
-A Gmail-like webmail client powered by the real Gmail API, with a shared Aither Account backed by AitherBackend.
+Aither Mail is Aither's webmail interface built around the **MailHog SMTP/API architecture** and authenticated with the shared Aither Account system.
 
-## v3
+## v4 architecture
 
-Aither Mail v3 focuses on making the app feel like a real mail client instead of a simple API demo.
+- **Web app:** static HTML/CSS/JavaScript, suitable for GitHub Pages
+- **Identity:** AitherBackend session authentication
+- **Mail engine:** MailHog-compatible SMTP + HTTP API backend
+- **Message API:** MailHog API v1/v2 style endpoints
+- **Storage:** MailHog Maildir storage can be enabled for persistence
+- **SMTP:** port `1025` by default
+- **HTTP API/UI:** port `8025` by default
+- **No Gmail API key:** v4 no longer requires Gmail OAuth just to operate the Aither Mail UI
 
-### Included
+MailHog provides an RFC5321 SMTP server, HTTP APIs for listing/retrieving/deleting messages, real-time web updates, MIME handling, and optional persistent storage. Aither Mail v4 uses that model while providing its own Aither-branded interface and account layer. citehttps://github.com/mailhog/MailHog
 
-- Gmail-style three-pane desktop layout
-- Responsive mobile layout with slide-out navigation
-- Aither Account registration, login, session, and logout
-- Google Gmail OAuth connection
-- Inbox, Starred, Sent, Drafts, and Trash
-- Gmail search syntax
-- Message selection with bulk actions
-- Archive, trash, star/unstar, and mark unread
-- Real compose and reply
-- Reply threading with `threadId`, `In-Reply-To`, and `References`
-- Sandboxed HTML email viewer
-- Pagination with Load more
-- Refresh and retry states
-- Settings panel with compact-list option
-- No Gmail API key
-- No Gmail password stored by Aither Mail
-- Backend session kept in an HttpOnly cookie
-- Gmail access token kept in memory
+## Local mail backend
 
-## Architecture
-
-- **Frontend:** static HTML/CSS/JavaScript on GitHub Pages
-- **Aither Account:** AitherBackend
-- **Email provider:** Gmail REST API
-- **Google auth:** Google Identity Services OAuth
-
-## Setup
-
-### AitherBackend
-
-Deploy the existing AitherBackend as an HTTPS FastAPI service. The frontend currently uses `https://aither-backend.onrender.com`; if your deployment has another URL, change `BACKEND_URL` at the top of `app.js`.
-
-The frontend uses the backend's session endpoints and sends requests with credentials enabled. Do not put backend secrets in this repository.
-
-### Gmail
-
-1. Enable the Gmail API in Google Cloud.
-2. Configure Google OAuth consent.
-3. Create a Web application OAuth client.
-4. Add your GitHub Pages origin as an Authorized JavaScript origin.
-5. Add `http://localhost:8000` for local development if needed.
-6. Replace `YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com` in `CLIENT_ID` in `app.js`.
-
-The OAuth client ID is public configuration. No Gmail API key is required.
-
-## Run locally
+Docker is the easiest way to run the MailHog-compatible mail engine locally:
 
 ```bash
-python -m http.server 8000
+docker compose up -d
 ```
 
-Open `http://localhost:8000/`. Do not open the app with `file://`.
+The local mail server exposes:
 
-## GitHub Pages
+- SMTP: `localhost:1025`
+- MailHog HTTP/API: `localhost:8025`
 
-Use GitHub Settings → Pages → Deploy from a branch → `main` → root.
+MailHog supports configurable CORS and Maildir storage through environment variables; the included compose file enables Maildir persistence. citehttps://github.com/mailhog/MailHog/blob/master/docs/CONFIG.md
 
-## Roadmap
+For the browser frontend, set `window.AITHER_MAIL_API` before `app.js` loads when your API is hosted somewhere other than the default configured backend.
 
-The next major features can add conversation/thread view, attachments, draft autosave, labels, filters, contacts, notifications, multiple Gmail accounts, and richer settings.
+Example:
 
-## Security
+```html
+<script>
+  window.AITHER_MAIL_API = 'https://your-aither-mail-api.example.com';
+</script>
+<script src="app.js" defer></script>
+```
 
-Aither Mail does not store passwords or private backend credentials. AitherBackend handles account passwords and server-side sessions. Gmail access tokens are kept in memory. Email HTML is displayed in a sandboxed iframe.
+## Aither Account
+
+Aither Mail still uses the central AitherBackend for account registration, login, sessions, and logout. Mail storage and SMTP are deliberately kept separate from the browser so private backend credentials never belong in the GitHub Pages repository.
+
+## v4 features
+
+- Aither Account sign-in and registration
+- MailHog-style inbox
+- MailHog API v2 message listing
+- Message detail view
+- HTML email rendering inside a sandboxed iframe
+- Raw message/source inspection
+- Search
+- Inbox / Sent / All Mail views
+- Multi-select and bulk delete
+- Compose/reply interface
+- Automatic inbox refresh
+- Responsive mobile layout
+- Persistent local Maildir option
+- SMTP-compatible development workflow
+
+## Important deployment note
+
+GitHub Pages can host the frontend, but it cannot run an SMTP server. Aither Mail v4 therefore requires the mail backend to run separately (for example on a server/container platform). The frontend's `MAIL_API` endpoint must point at that backend.
+
+Do **not** put SMTP passwords or other private provider credentials into this repository.
+
+## MailHog license
+
+MailHog is released under the MIT license. See the upstream project for its license and source. citehttps://github.com/mailhog/MailHog
