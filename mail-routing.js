@@ -1,20 +1,13 @@
 (() => {
   const backend = (window.AITHER_BACKEND_URL || 'https://aitherbackend.onrender.com').replace(/\/$/, '');
+  const renderMail = 'https://aithermail.onrender.com';
   const originalFetch = window.fetch.bind(window);
-  window.AITHER_MAIL_API = backend;
-  window.fetch = (input, init) => {
-    let url = typeof input === 'string' ? input : input?.url;
-    if (url) {
-      try {
-        const u = new URL(url, location.href);
-        if (u.origin === location.origin && (u.pathname.startsWith('/api/v1/') || u.pathname.startsWith('/api/v2/'))) {
-          const path = u.pathname.replace('/api/v1/', '/api/mail/').replace('/api/v2/', '/api/mail/');
-          u.pathname = path;
-          url = u.toString();
-          input = typeof input === 'string' ? url : new Request(url, input);
-        }
-      } catch (_) {}
-    }
-    return originalFetch(input, init);
-  };
+
+  // The Render AitherMail service exposes the MailHog-compatible API itself.
+  // GitHub Pages needs to call that service directly; the Render-hosted app can
+  // use its own origin. Never rewrite /api/v1 or /api/v2 mail calls to AitherBackend.
+  window.AITHER_MAIL_API = location.hostname.endsWith('github.io') ? renderMail : location.origin;
+  window.AITHER_BACKEND_URL = backend;
+
+  window.fetch = (input, init) => originalFetch(input, init);
 })();
