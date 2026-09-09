@@ -1,73 +1,69 @@
-# Aither Mail v4
+# Aither Mail v6
 
-Aither Mail is Aither's webmail interface built around the **MailHog SMTP/API architecture** and authenticated with the shared Aither Account system.
+Aither Mail is Aither's webmail client built around the **MailHog-compatible mail engine** and the shared **Aither Account** system, with **Resend** as the production outbound delivery provider.
 
-## v4 architecture
+## v6 architecture
 
 - **Web app:** static HTML/CSS/JavaScript, suitable for GitHub Pages
 - **Identity:** AitherBackend session authentication
 - **Mail engine:** MailHog-compatible SMTP + HTTP API backend
-- **Message API:** MailHog API v1/v2 style endpoints
-- **Storage:** MailHog Maildir storage can be enabled for persistence
-- **SMTP:** port `1025` by default
-- **HTTP API/UI:** port `8025` by default
-- **No Gmail API key:** v4 no longer requires Gmail OAuth just to operate the Aither Mail UI
+- **Production sending:** Resend Email API
+- **Message API:** Aither Mail `/api/v1` and `/api/v2` endpoints
+- **Local persistence:** MailHog Maildir can be enabled for development
+- **SMTP:** port `1025` inside the container/network
+- **HTTP:** Render exposes the Aither Mail web service on its assigned `$PORT`
+- **UI:** Aither-branded, responsive, Gmail-style productivity layer
 
-MailHog provides an RFC5321 SMTP server, HTTP APIs for listing/retrieving/deleting messages, real-time web updates, MIME handling, and optional persistent storage. Aither Mail v4 uses that model while providing its own Aither-branded interface and account layer. citehttps://github.com/mailhog/MailHog
+Resend supports production email delivery through its Email API and also provides inbound email processing through webhook-based receiving, including Resend-provided `.resend.app` inbound addresses. citehttps://resend.com/features/email-api citehttps://resend.com/features/inbound
 
-## Local mail backend
+## Resend configuration
 
-Docker is the easiest way to run the MailHog-compatible mail engine locally:
+Set these environment variables on the Aither Mail backend — never commit them to GitHub:
+
+```text
+RESEND_API_KEY=re_xxxxxxxxx
+RESEND_FROM=Aither Mail <your-verified-sender@example.com>
+```
+
+`RESEND_API_KEY` enables Resend delivery. `RESEND_FROM` should be a sender/domain verified in your Resend account. The authenticated Aither Account email is used as `Reply-To`, so replies can go back to the user even when the verified sending address is a service address.
+
+If `RESEND_API_KEY` is not configured, Aither Mail automatically falls back to local MailHog SMTP for development.
+
+The backend also exposes `/api/config`, which reports whether Resend is configured without revealing the API key.
+
+## Gmail-style improvements
+
+- Gmail-like inbox / sent / all-mail navigation
+- Fast search across sender, recipient, subject, and body text
+- Mobile-first message reading and compose behavior
+- Keyboard shortcuts: `/` search, `C` compose, and `G` navigation shortcuts
+- Better hover, focus, selected-message, and loading states
+- Dark-mode-aware controls
+- Resend/local provider status in the header
+- Local draft saving
+- HTML email rendering in a sandboxed iframe
+- Raw message/source inspection
+- Multi-select and bulk deletion
+- Aither Account authentication
+
+## Local development
 
 ```bash
 docker compose up -d
 ```
 
-The local mail server exposes:
+Local development continues to use MailHog SMTP/API when Resend is not configured.
 
-- SMTP: `localhost:1025`
-- MailHog HTTP/API: `localhost:8025`
+## Deployment
 
-MailHog supports configurable CORS and Maildir storage through environment variables; the included compose file enables Maildir persistence. citehttps://github.com/mailhog/MailHog/blob/master/docs/CONFIG.md
+GitHub Pages can host the frontend, but it cannot run an SMTP server. Aither Mail's backend therefore runs separately. The GitHub Pages frontend routes mail API requests to the Aither Mail backend while authentication remains with AitherBackend.
 
-For the browser frontend, set `window.AITHER_MAIL_API` before `app.js` loads when your API is hosted somewhere other than the default configured backend.
+For Render, keep the Resend API key in the service's environment variables. Do not put it in JavaScript, GitHub Pages, `Dockerfile`, or committed `.env` files.
 
-Example:
+## Important Resend limitation
 
-```html
-<script>
-  window.AITHER_MAIL_API = 'https://your-aither-mail-api.example.com';
-</script>
-<script src="app.js" defer></script>
-```
-
-## Aither Account
-
-Aither Mail still uses the central AitherBackend for account registration, login, sessions, and logout. Mail storage and SMTP are deliberately kept separate from the browser so private backend credentials never belong in the GitHub Pages repository.
-
-## v4 features
-
-- Aither Account sign-in and registration
-- MailHog-style inbox
-- MailHog API v2 message listing
-- Message detail view
-- HTML email rendering inside a sandboxed iframe
-- Raw message/source inspection
-- Search
-- Inbox / Sent / All Mail views
-- Multi-select and bulk delete
-- Compose/reply interface
-- Automatic inbox refresh
-- Responsive mobile layout
-- Persistent local Maildir option
-- SMTP-compatible development workflow
-
-## Important deployment note
-
-GitHub Pages can host the frontend, but it cannot run an SMTP server. Aither Mail v4 therefore requires the mail backend to run separately (for example on a server/container platform). The frontend's `MAIL_API` endpoint must point at that backend.
-
-Do **not** put SMTP passwords or other private provider credentials into this repository.
+For production sending, Resend requires an authorized sender. Aither Mail therefore uses the configured `RESEND_FROM` address for delivery and the signed-in Aither Account address as the reply-to address. This keeps the API key server-side and avoids pretending to be an unverified sender.
 
 ## MailHog license
 
-MailHog is released under the MIT license. See the upstream project for its license and source. citehttps://github.com/mailhog/MailHog
+MailHog is released under the MIT license. See the upstream project for its license and source.
